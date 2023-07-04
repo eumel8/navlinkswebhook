@@ -8,7 +8,7 @@ import (
 	uiv1 "github.com/rancher/rancher/pkg/apis/ui.cattle.io/v1"
 )
 
-func createNavlinks(namespace string, service string, port string, uid string, icon string) uiv1.NavLink {
+func specNavlinks(namespace string, service string, port string, uid string, icon string) uiv1.NavLink {
 	return uiv1.NavLink{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "monitoring-" + namespace + "-" + service,
