@@ -203,7 +203,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		err = clientset.Navlinks().Delete(context.TODO(), navGrafana.Name, metav1.DeleteOptions{})
 		if err != nil {
 			if k8serrors.IsNotFound(err) {
-				glog.Error("navlinks grafanaalready deleted for ", arRequest.Request.Namespace)
+				glog.Error("navlinks grafana already deleted for ", arRequest.Request.Namespace)
 				nls.response(true, "Navlink grafana already deleted, skipped", w, &arRequest)
 				return
 			}
