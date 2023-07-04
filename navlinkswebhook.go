@@ -80,7 +80,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// output of raw in json format
-	rawOut := fmt.Sprintf("%s", raw)
+	rawOut := fmt.Sprintf("%s", arRequest)
 	glog.Infof("output of raw %s", rawOut)
 
 	ns := prom.Namespace
