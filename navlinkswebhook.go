@@ -71,30 +71,6 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	raw := arRequest.Request.Object.Raw
-	operation := arRequest.Request.Operation
-	prom := monitoringv1.Prometheus{}
-	if err := json.Unmarshal(raw, &prom); err != nil {
-		glog.Error("error deserializing pod")
-		nls.response(false, "Deserializing failed", w, &arRequest)
-		return
-	}
-
-	ns := prom.Namespace
-	if len(ns) == 0 {
-		glog.Errorf("No namespace found %s/%s", prom.Name, prom.Namespace)
-		resp, err := json.Marshal(admissionResponse(200, true, "Success", "Navlinks create skipped", &arRequest))
-		if err != nil {
-			glog.Errorf("Can't encode response: %v", err)
-			http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
-		}
-		if _, err := w.Write(resp); err != nil {
-			glog.Errorf("Can't write response: %v", err)
-			http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -104,7 +80,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	// creates the clientset
 	clientset := NewForConfigOrDie(config)
 	if err != nil {
-		glog.Error("cant setup clientset: ", ns)
+		glog.Error("cant setup clientset: ", arRequest.Request.Namespace)
 		nls.response(false, "Setup clientset failed", w, &arRequest)
 	}
 
@@ -116,12 +92,35 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// switch operation mode
+	operation := arRequest.Request.Operation
 	switch operation {
 	case v1.Create:
+
+		raw := arRequest.Request.Object.Raw
+		prom := monitoringv1.Prometheus{}
+		if err := json.Unmarshal(raw, &prom); err != nil {
+			glog.Error("error deserializing pod")
+			nls.response(false, "Deserializing failed", w, &arRequest)
+			return
+		}
+
+		ns := prom.Namespace
+		if len(ns) == 0 {
+			glog.Errorf("No namespace found %s/%s", prom.Name, prom.Namespace)
+			resp, err := json.Marshal(admissionResponse(200, true, "Success", "Navlinks create skipped", &arRequest))
+			if err != nil {
+				glog.Errorf("Can't encode response: %v", err)
+				http.Error(w, fmt.Sprintf("could not encode response: %v", err), http.StatusInternalServerError)
+			}
+			if _, err := w.Write(resp); err != nil {
+				glog.Errorf("Can't write response: %v", err)
+				http.Error(w, fmt.Sprintf("could not write response: %v", err), http.StatusInternalServerError)
+			}
+			return
+		}
 		// create navlink resource prometheus-operated
 		navPrometheus := specNavlinks(ns, "prometheus-operated", "9090", string(arRequest.Request.UID), logoPrometheus)
 		_, err = clientset.Navlinks().Create(context.TODO(), &navPrometheus, metav1.CreateOptions{})
-
 		if err != nil {
 			if k8serrors.IsAlreadyExists(err) {
 				glog.Error("navlinks prometheus already exists for ", ns)
@@ -131,13 +130,11 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 			glog.Errorf("error creating navlinks: %v", err)
 			nls.response(false, "Navlink prometheus creating failed", w, &arRequest)
 		}
-
 		glog.Info("navlinks created: ", navPrometheus.Name)
 
 		// create navlink resource alertmanager-operated
 		navAlertManager := specNavlinks(ns, "alertmanager-operated", "9093", string(arRequest.Request.UID), logoAlertmanager)
 		_, err = clientset.Navlinks().Create(context.TODO(), &navAlertManager, metav1.CreateOptions{})
-
 		if err != nil {
 			if k8serrors.IsAlreadyExists(err) {
 				glog.Error("navlinks alertmanager already exists for ", ns)
@@ -152,7 +149,6 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		// create navlink resource prometheus-monitoring-grafana
 		navGrafana := specNavlinks(ns, "project-monitoring-grafana", "80", string(arRequest.Request.UID), logoGrafana)
 		_, err = clientset.Navlinks().Create(context.TODO(), &navGrafana, metav1.CreateOptions{})
-
 		if err != nil {
 			if k8serrors.IsAlreadyExists(err) {
 				glog.Error("navlinks grafana already exists for ", ns)
@@ -175,7 +171,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		}
 	case v1.Delete:
 		// delete navlink resource prometheus-operated
-		navPrometheus := specNavlinks(ns, "prometheus-operated", "9090", string(arRequest.Request.UID), logoPrometheus)
+		navPrometheus := specNavlinks(arRequest.Request.Namespace, "prometheus-operated", "9090", string(arRequest.Request.UID), logoPrometheus)
 		err = clientset.Navlinks().Delete(context.TODO(), navPrometheus.Name, metav1.DeleteOptions{})
 		if err != nil {
 			glog.Errorf("error deleting navlinks: %v", err)
@@ -184,7 +180,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		glog.Info("navlinks deleted: ", navPrometheus.Name)
 
 		// delete navlink resource alertmanager-operated
-		navAlertManager := specNavlinks(ns, "alertmanager-operated", "9093", string(arRequest.Request.UID), logoAlertmanager)
+		navAlertManager := specNavlinks(arRequest.Request.Namespace, "alertmanager-operated", "9093", string(arRequest.Request.UID), logoAlertmanager)
 		err = clientset.Navlinks().Delete(context.TODO(), navAlertManager.Name, metav1.DeleteOptions{})
 		if err != nil {
 			glog.Errorf("error deleting navlinks: %v", err)
@@ -193,7 +189,7 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		glog.Info("navlinks deleted: ", navAlertManager.Name)
 
 		// delete navlink resource prometheus-monitoring-grafana
-		navGrafana := specNavlinks(ns, "project-monitoring-grafana", "80", string(arRequest.Request.UID), logoGrafana)
+		navGrafana := specNavlinks(arRequest.Request.Namespace, "project-monitoring-grafana", "80", string(arRequest.Request.UID), logoGrafana)
 		err = clientset.Navlinks().Delete(context.TODO(), navGrafana.Name, metav1.DeleteOptions{})
 		if err != nil {
 			glog.Errorf("error deleting navlinks: %v", err)
