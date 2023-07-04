@@ -79,6 +79,9 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// output of raw in json format
+	glog.Info("output of raw", raw)
+
 	ns := prom.Namespace
 	glog.Error("prom namespace", ns)
 
