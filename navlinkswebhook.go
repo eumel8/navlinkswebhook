@@ -174,6 +174,11 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		navPrometheus := specNavlinks(arRequest.Request.Namespace, "prometheus-operated", "9090", string(arRequest.Request.UID), logoPrometheus)
 		err = clientset.Navlinks().Delete(context.TODO(), navPrometheus.Name, metav1.DeleteOptions{})
 		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				glog.Error("navlinks prometheus already deleted for ", arRequest.Request.Namespace)
+				nls.response(true, "Navlink prometheus already exists, skipped", w, &arRequest)
+				return
+			}
 			glog.Errorf("error deleting navlinks: %v", err)
 			nls.response(false, "Navlink prometheus deleting failed", w, &arRequest)
 		}
@@ -183,6 +188,11 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		navAlertManager := specNavlinks(arRequest.Request.Namespace, "alertmanager-operated", "9093", string(arRequest.Request.UID), logoAlertmanager)
 		err = clientset.Navlinks().Delete(context.TODO(), navAlertManager.Name, metav1.DeleteOptions{})
 		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				glog.Error("navlinks alertmanager already deleted for ", arRequest.Request.Namespace)
+				nls.response(true, "Navlink alertmanager already deleted, skipped", w, &arRequest)
+				return
+			}
 			glog.Errorf("error deleting navlinks: %v", err)
 			nls.response(false, "Navlink alertmanager deleting failed", w, &arRequest)
 		}
@@ -192,6 +202,11 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 		navGrafana := specNavlinks(arRequest.Request.Namespace, "project-monitoring-grafana", "80", string(arRequest.Request.UID), logoGrafana)
 		err = clientset.Navlinks().Delete(context.TODO(), navGrafana.Name, metav1.DeleteOptions{})
 		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				glog.Error("navlinks grafanaalready deleted for ", arRequest.Request.Namespace)
+				nls.response(true, "Navlink grafana already deleted, skipped", w, &arRequest)
+				return
+			}
 			glog.Errorf("error deleting navlinks: %v", err)
 			nls.response(false, "Navlink grafana deleting failed", w, &arRequest)
 		}
