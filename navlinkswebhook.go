@@ -80,7 +80,8 @@ func (nls *NavlinksServerHandler) serve(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// output of raw in json format
-	glog.Infof("output of raw %v", []byte(raw))
+	rawOut := fmt.Sprintf("%s", raw)
+	glog.Infof("output of raw %s", rawOut)
 
 	ns := prom.Namespace
 	glog.Error("prom namespace", ns)
