@@ -2,9 +2,9 @@ apiVersion: v2
 name: navlinkswebhook
 description: A Helm chart for Admission Webhook to create Navlinks for Prometheus
 type: application
-version: 2.0.0
+version: 2.0.1
 appVersion: "2.0.0"
 maintainers:
-  - name: eumel8
-    email: f.kloeker@telekom.de
-    url: https://www.telekom.com
+- name: eumel8
+  email: f.kloeker@telekom.de
+  url: https://www.telekom.com
