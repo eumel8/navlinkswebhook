@@ -1,5 +1,5 @@
 # build stage
-FROM golang:1.20 AS build-env
+FROM golang:1.23 AS build-env
 RUN mkdir -p /go/src/github.com/eumel8/navlinkswebhook
 WORKDIR /go/src/github.com/eumel8/navlinkswebhook
 COPY  . .
