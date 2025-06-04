@@ -8,7 +8,7 @@ metadata:
 spec:
   podSelector:
       matchLabels:
-          {{- include "navlinkswebhook.labels" . | nindent 8 }}
+          {{- include "navlinkswebhook.selectorLabels" . | nindent 8 }}
   policyTypes:
       - Ingress
   ingress:
